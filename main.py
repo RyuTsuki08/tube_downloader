@@ -7,15 +7,17 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
 class Video:  
-    def __init__(self, id: str, url : str, tile: str, thumbnail: str, ):
+    def __init__(self, id: str, url : str, tile: str, thumbnail: str, author: str):
         self.id = id
         self.url = url
         self.tile = tile
         self.thumbnail = thumbnail
+        self.author = author
 
 origins = [
     "http://localhost",
     "http://localhost:8080",
+    "http://localhost:5173"
 ]
 
 app.add_middleware(
@@ -33,7 +35,7 @@ def get_video_by_url(url: str):
         print(f"Veryfing video from {url}")
         yt = YouTube(url)
         # yt.streams.filter(only_audio=True).first().download()
-        vdo = Video(yt.video_id,  url, yt.title, yt.thumbnail_url)
+        vdo = Video(yt.video_id,  url, yt.title, yt.thumbnail_url, yt.author)
         return {'msg': 'Video loaded successfuly', 'video': vdo}
     except Exception as e:
         return { "msg": "Error Server", "error": e}
