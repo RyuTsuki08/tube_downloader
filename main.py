@@ -51,8 +51,26 @@ def  download_video_or_audio(url: str, type: bool):
         return {'msg':'Download finished'}
     except Exception as e:
         return {"msg": "Download error", "error":  e}
+    
+@app.get('/playlist')
+def get_videos_from_playlist(url:str):
+    try:
+        playlist = Playlist(url)
+        videos = []
+        for i in playlist.video_urls:
+            yt = YouTube(i)
+            videos.append({
+                'title':yt.title,
+                'duration':yt.length, 
+                'url': i, 
+                'thumbnail': yt.thumbnail_url, 
+                'author': yt.author
+                })
+        return  {'msg': 'Playlist Loaded','title': playlist.title, 'total_videos':len(videos), 'videos':videos }
+    except Exception as e:
+        return {"msg": "Download error", "error": e}
 
-@app.post('/playlist')
+@app.post('/playlist-donwload')
 def  playlist_from_url(url:str, type: bool):
     try:
         pl = Playlist(url)
