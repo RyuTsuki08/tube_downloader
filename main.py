@@ -3,8 +3,12 @@ from typing import Union
 from pytube import YouTube, Playlist
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI()
+
+url: str = os.environ.get("SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_KEY")
 
 class Video:  
     def __init__(self, id: str, url : str, tile: str, thumbnail: str, author: str):
@@ -27,6 +31,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# user=postgres.taqhbibenlzyhcwngjbt 
+# password=[YOUR-PASSWORD] 
+# host=aws-0-sa-east-1.pooler.supabase.com 
+# port=5432 
+# dbname=postgres
 
 
 @app.get('/')
