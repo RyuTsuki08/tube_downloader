@@ -18,15 +18,15 @@ Instalación
 ------------
 1. Clone el repositorio,  usando:
 ```sh copy code
-$ git clone https://github.com/RyuTsuki08/tube_downloader.git && cd  tube_downloader
+git clone https://github.com/RyuTsuki08/tube_downloader.git && cd  tube_downloader
 ```
 2. Luego, si quiere ahorrar todo el proceso de instalación solo asegurese de tener instalado los programas  mencionados anteriormente y copie esto:
 ``` sh copy code
-$ sudo chmod +x ./install.sh 
+sudo chmod +x ./install.sh 
 ```
 3. Ejecute el script "./install.sh" con permisos de superusuario:
 ```sh copy code
-$ ./install.sh
+./install.sh
  ```
 
 Instalación manual 
@@ -34,15 +34,15 @@ Instalación manual
 Si prefiere no usar un script de instalación, puede seguir los siguientes pasos:
 1. Al clonar  este repositorio, deberá iniciar el entorno virtual: 
 ```sh copy code
-$ source tube/bin/activate
+source tube/bin/activate
 ```
 2. Instala las dependencias de Python usando el archivo 'requirements.txt':
 ```sh copy code
-$ pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 3. Luego ejecute el backend de 'fastapi' con 'uvicorn':
 ```sh copy code
-$ uvicorn  main:app --reload
+uvicorn  main:app --reload
 ```
 
 NOTA:
@@ -52,7 +52,7 @@ Desconexión
 -----------
 Para salir del entorno virtual de Python, ejecuta el siguiente comando:
 
-`$ deactivate`
+`deactivate`
 
 Contribuyendo
 Por favor, contribuye con el desarrollo de esta aplicación de Python. Si tienes ideas de cómo mejorar este script, envía una solicitud de extracción en GitHub.
