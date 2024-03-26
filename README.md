@@ -45,6 +45,21 @@ pip install -r requirements.txt
 uvicorn  main:app --reload
 ```
 
+Probando la aplicación
+----------------------
+
+Si todo inició sin error podrás probar la aplicación desde una terminal, ejecutando el siguiente comando:
+```sh copy code
+
+curl -X GET 'http://127.0.0.1:8000/?url=https://www.youtube.com/watch?v=9bZkp7q19f0'
+
+```
+
+Esto debería devolver una respuesta como: 
+```sh 
+{"msg":"Video loaded successfuly","video":{"id":"9bZkp7q19f0","url":"https://www.youtube.com/watch?v=9bZkp7q19f0","tile":"Gangnam Style","thumbnail":"https://i.ytimg.com/vi/9bZkp7q19f0/hq720.jpg?sqp=-oaymwEXCNUGEOADIAQqCwjVARCqCBh4INgESFo&rs=AOn4CLDGWPq_kk5PtRvI00NrQRRwVOVYnA","author":"PSY"}}
+```
+
 NOTA:
 Este es el backend de una aplicación web que puede descargar vídeos y playlists de youtube . El frontend se encuentra en otro repositorio: [Frontend](https://github.com/RyuTsuki08/tube_downloader_frontend). El script `install.sh` cuenta con los comando para ejecutar el frontend. Pero también puedes ejecutar ambos lados aparte, depende de como prefieras usar la aplicación. 
 
