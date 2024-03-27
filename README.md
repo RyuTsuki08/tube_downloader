@@ -70,9 +70,13 @@ Para salir del entorno virtual de Python, ejecuta el siguiente comando:
 `deactivate`
 
 Contribuyendo
+-------------
+
 Por favor, contribuye con el desarrollo de esta aplicación de Python. Si tienes ideas de cómo mejorar este script, envía una solicitud de extracción en GitHub.
 
 Licencia
+-----------
+MIT License
 Esta aplicación de Python para descargar videos de YouTube está bajo licencia MIT.
 
 ¡Gracias por utilizar esta aplicación de Python!
