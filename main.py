@@ -40,7 +40,6 @@ app.add_middleware(
 # port=5432 
 # dbname=postgres
 
-
 @app.get('/')
 def get_video_by_url(url: str):
     try:
@@ -58,6 +57,7 @@ def  download_video_or_audio(url: str, type: bool):
         yt = YouTube(url)
         if type:
             yt.streams.filter(only_audio=True).first().download()
+            os.rename(f'{yt._title}.mp4', f'{yt._title}.mp3')
         else:
             yt.streams.filter(only_audio=False).first().download()
         return {'msg':'Download finished'}
@@ -93,9 +93,17 @@ def  playlist_from_url(url:str, type: bool):
             print(video)
             if type:
                 video_result.streams.filter(only_audio=True).first().download(f'./{pl.title}')
+                # os.rename(f'{video_result._title}.mp4', f'{video_result._title}.mp3')
             else:
                 video_result.streams.filter(only_audio=False).first().download(f'./{pl.title}')
             videos.append(video);
+        if type:
+            files = os.listdir(pl.title)
+            print(files)
+            for file in files:
+                get_extension = file.split('.')
+                # os.rename(file, f'{get_extension[0]}.mp3')
+                print(f'{get_extension[0]}.mp3')
         return {"msg":"Playlist Loaded","videos":videos,"total":len(videos)}
     except Exception as e:
         return {"msg": "Download error", "error":  e}

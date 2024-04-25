@@ -76,7 +76,7 @@ Por favor, contribuye con el desarrollo de esta aplicación de Python. Si tienes
 
 Licencia
 -----------
-MIT License
+MIT License 
 Esta aplicación de Python para descargar videos de YouTube está bajo licencia MIT.
 
 ¡Gracias por utilizar esta aplicación de Python!
