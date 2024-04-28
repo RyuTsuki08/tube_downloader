@@ -98,15 +98,19 @@ def  playlist_from_url(url:str, type: bool):
                 video_result.streams.filter(only_audio=False).first().download(f'./{pl.title}')
             videos.append(video);
         if type:
-            files = os.listdir(pl.title)
-            print(files)
-            for file in files:
-                get_extension = file.split('.')
-                # os.rename(file, f'{get_extension[0]}.mp3')
-                print(f'{get_extension[0]}.mp3')
+           _convert_mp3_to_mp4(pl)
         return {"msg":"Playlist Loaded","videos":videos,"total":len(videos)}
     except Exception as e:
+        print(e)
         return {"msg": "Download error", "error":  e}
+    
+def _convert_mp3_to_mp4(playlist):
+    files = os.listdir(playlist.title)
+    for file in files:
+        get_extension = file.split('.')
+        os.rename(f'./{playlist.title}/{file}', f'./{playlist.title}/{get_extension[0]}.mp3')
+        print(f'{get_extension[0]}.mp3')
+
 
     
 
