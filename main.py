@@ -82,7 +82,7 @@ def get_videos_from_playlist(url:str):
     except Exception as e:
         return {"msg": "Download error", "error": e}
 
-@app.post('/playlist-donwload')
+@app.post('/playlist-download')
 def  playlist_from_url(url:str, type: bool):
     try:
         pl = Playlist(url)
