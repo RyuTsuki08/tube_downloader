@@ -1,23 +1,16 @@
-from fastapi import FastAPI
-from typing import Union
-from pytubefix import YouTube, Playlist
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel
+from pytubefix import YouTube, Playlist
+from pytubefix.cli import on_progress
 import os
+import shutil
 
 app = FastAPI()
 
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
-
-class Video:  
-    def __init__(self, id: str, url : str, tile: str, thumbnail: str, author: str):
-        self.id = id
-        self.url = url
-        self.tile = tile
-        self.thumbnail = thumbnail
-        self.author = author
-
+# --- Configuration & CORS ---
 origins = [
     "http://localhost",
     "http://localhost:8080",
@@ -31,87 +24,140 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"]
 )
 
+# --- Pydantic Models ---
+class VideoMetadata(BaseModel):
+    id: str
+    url: str
+    title: str
+    thumbnail: str
+    author: str
 
-# user=postgres.taqhbibenlzyhcwngjbt 
-# password=[YOUR-PASSWORD] 
-# host=aws-0-sa-east-1.pooler.supabase.com 
-# port=5432 
-# dbname=postgres
+class DownloadRequest(BaseModel):
+    url: str
+    is_audio: bool = False
 
-@app.get('/')
-def get_video_by_url(url: str):
+class PlaylistRequest(BaseModel):
+    url: str
+    is_audio: bool = False
+
+# --- Helper Functions ---
+def cleanup_file(path: str):
+    """Deletes a file or directory after the response is sent."""
     try:
-        print(f"Veryfing video from {url}")
-        yt = YouTube(url)
-        # yt.streams.filter(only_audio=True).first().download()
-        vdo = Video(yt.video_id,  url, yt.title, yt.thumbnail_url, yt.author)
-        return {'msg': 'Video loaded successfuly', 'video': vdo}
+        if os.path.isfile(path):
+            os.remove(path)
+        elif os.path.isdir(path):
+            shutil.rmtree(path)
+        print(f"Cleaned up: {path}")
     except Exception as e:
-        return { "msg": "Error Server", "error": e}
+        print(f"Error cleaning up {path}: {e}")
+
+def download_logic(url: str, is_audio: bool) -> str:
+    """Synchronous download logic to be run in a threadpool."""
+    yt = YouTube(url, on_progress_callback=on_progress)
+    safe_title = "".join([c for c in yt.title if c.isalpha() or c.isdigit() or c==' ']).rstrip()
+    
+    if is_audio:
+        stream = yt.streams.get_audio_only()
+        filename = f"{safe_title}.m4a"
+        download_path = stream.download(filename=filename)
+    else:
+        stream = yt.streams.get_highest_resolution()
+        filename = f"{safe_title}.mp4"
+        download_path = stream.download(filename=filename)
+    
+    return download_path
+
+# --- Endpoints ---
+
+@app.get('/', response_model=VideoMetadata)
+async def get_video_metadata(url: str):
+    try:
+        print(f"Verifying video from {url}")
+        # Run blocking pytube call in a separate thread
+        yt = await run_in_threadpool(YouTube, url)
+        
+        return VideoMetadata(
+            id=yt.video_id,
+            url=url,
+            title=yt.title,
+            thumbnail=yt.thumbnail_url,
+            author=yt.author
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error fetching video: {str(e)}")
+
 @app.post('/download')
-def  download_video_or_audio(url: str, type: bool):
+async def download_video(request: DownloadRequest, background_tasks: BackgroundTasks):
     try:
-        print(f"Downloading from {url}")
-        yt = YouTube(url)
-        if type:
-            yt.streams.filter(only_audio=True).first().download()
-            os.rename(f'{yt._title}.mp4', f'{yt._title}.mp3')
-        else:
-            yt.streams.filter(only_audio=False).first().download()
-        return {'msg':'Download finished'}
+        print(f"Downloading from {request.url}")
+        # Run blocking download in a separate thread
+        file_path = await run_in_threadpool(download_logic, request.url, request.is_audio)
+        
+        filename = os.path.basename(file_path)
+        
+        # Schedule file deletion after response is sent
+        background_tasks.add_task(cleanup_file, file_path)
+        
+        return FileResponse(
+            path=file_path, 
+            filename=filename, 
+            media_type='application/octet-stream'
+        )
     except Exception as e:
-        return {"msg": "Download error", "error":  e}
-    
-@app.get('/playlist')
-def get_videos_from_playlist(url:str):
-    try:
-        playlist = Playlist(url)
-        videos = []
-        for i in playlist.video_urls:
-            yt = YouTube(i)
-            videos.append({
-                'title':yt.title,
-                'duration':yt.length, 
-                'url': i, 
-                'thumbnail': yt.thumbnail_url, 
-                'author': yt.author
-                })
-        return  {'msg': 'Playlist Loaded','title': playlist.title, 'total_videos':len(videos), 'videos':videos }
-    except Exception as e:
-        return {"msg": "Download error", "error": e}
+        raise HTTPException(status_code=500, detail=f"Download failed: {str(e)}")
 
-@app.post('/playlist-download')
-def  playlist_from_url(url:str, type: bool):
+def fetch_playlist_info(url: str):
+    """Helper to fetch playlist info synchronously."""
     try:
+        print(f"Initializing Playlist for {url}")
         pl = Playlist(url)
+        
+        # Force fetch of title to verify it works
+        title = pl.title
+        print(f"Playlist title: {title}")
+        
         videos = []
-        for video in pl:
-            video_result = YouTube(video)
-            print(f'Downloading {pl.title}')
-            print(video)
-            if type:
-                video_result.streams.filter(only_audio=True).first().download(f'./{pl.title}')
-                # os.rename(f'{video_result._title}.mp4', f'{video_result._title}.mp3')
-            else:
-                video_result.streams.filter(only_audio=False).first().download(f'./{pl.title}')
-            videos.append(video);
-        if type:
-           _convert_mp3_to_mp4(pl)
-        return {"msg":"Playlist Loaded","videos":videos,"total":len(videos)}
+        # Limit to 50 using manual counter to avoid IndexError on slicing
+        count = 0
+        for video in pl.videos:
+            if count >= 50:
+                break
+            try:
+                videos.append({
+                    "title": video.title,
+                    "url": video.watch_url,
+                    "thumbnail": video.thumbnail_url,
+                    "author": video.author
+                })
+                count += 1
+            except Exception as e:
+                print(f"Error processing video: {e}")
+                continue
+                
+        return {
+            "title": title,
+            "total_videos": len(pl.videos),
+            "preview_videos": videos,
+            "msg": "Playlist loaded successfully"
+        }
     except Exception as e:
-        print(e)
-        return {"msg": "Download error", "error":  e}
-    
-def _convert_mp3_to_mp4(playlist):
-    files = os.listdir(playlist.title)
-    for file in files:
-        get_extension = file.split('.')
-        os.rename(f'./{playlist.title}/{file}', f'./{playlist.title}/{get_extension[0]}.mp3')
-        print(f'{get_extension[0]}.mp3')
+        print(f"Error in fetch_playlist_info: {e}")
+        import traceback
+        traceback.print_exc()
+        raise e
 
-
-    
-
+@app.get('/playlist')
+async def get_playlist_metadata(url: str):
+    try:
+        print(f"Fetching playlist from {url}")
+        # Run the entire heavy lifting in a separate thread
+        data = await run_in_threadpool(fetch_playlist_info, url)
+        return data
+    except Exception as e:
+        print(f"Endpoint error: {e}")
+        raise HTTPException(status_code=400, detail=f"Error fetching playlist: {str(e)}")
 
