@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from typing import Union
-from pytube import YouTube, Playlist
+from pytubefix import YouTube, Playlist
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
